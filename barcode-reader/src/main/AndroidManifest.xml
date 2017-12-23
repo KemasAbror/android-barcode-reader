@@ -1,0 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="me.majiajie.barcodereader" >
+
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 闪光灯 -->
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+    <!--&lt;!&ndash; 配置改变 &ndash;&gt;-->
+    <!--<uses-permission android:name="android.permission.CHANGE_CONFIGURATION"/>-->
+
+    <!-- 描述所需硬件功能 -->
+    <uses-feature android:name="android.hardware.camera" />
+
+    <application>
+        <activity android:name=".ScanActivity"
+            android:label="@string/title_scan_activity"
+            android:screenOrientation="portrait"
+            />
+    </application>
+
+</manifest>
