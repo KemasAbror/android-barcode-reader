@@ -1,0 +1,29 @@
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = 'barcode-reader'
+
+    publishedGroupId = 'me.majiajie'
+    libraryName = 'BarcodeReader'
+    artifact = 'barcode-reader'
+
+    libraryDescription = 'Android barcode reader powered by zxing'
+
+    siteUrl = 'https://github.com/tyzlmjj/android-barcode-reader'
+    gitUrl = 'https://github.com/tyzlmjj/android-barcode-reader.git'
+
+    libraryVersion = '0.1.0'
+
+    developerId = 'tyzlmjj'
+    developerName = 'Ma JiaJie'
+    developerEmail = 'tyzl931019@gmail.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+apply from: 'https://raw.githubusercontent.com/tyzlmjj/Gradle/master/JCenter/maven_install.gradle'
+apply from: 'https://raw.githubusercontent.com/tyzlmjj/Gradle/master/JCenter/bintray.gradle'
+
+
+

@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 
+import me.majiajie.barcodereader.BarcodeFormat;
 import me.majiajie.barcodereader.encode.BarCodeGenerateHelper;
 
 /**
@@ -67,7 +68,7 @@ public class BarCodeGenerateActivity extends AppCompatActivity {
             int width = 400 + 200 * mSeekbar.getProgress();
             int height = 200 + 200 * mSeekbarB.getProgress();
 
-            BarCodeGenerateHelper helper = new BarCodeGenerateHelper(str,width,height,mColor);
+            BarCodeGenerateHelper helper = new BarCodeGenerateHelper(str, BarcodeFormat.CODE_128,width,height,mColor);
             try {
                 Bitmap bitmap = helper.generate();
                 mImg.setImageBitmap(bitmap);

@@ -34,12 +34,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startScanActivity(View view) {
+        // 只解析二维码
 //        ScanActivity.startActivityForResult(this,0, new int[]{BarcodeFormat.CODE_128});
+        // 第三个参数传空，默认解析二维码和CODE128
         ScanActivity.startActivityForResult(this,0, null);
-    }
-
-    public void showToast(String text){
-        Toast.makeText(this,text,Toast.LENGTH_LONG).show();
     }
 
     public void goQrCodeGenerateActivity(View view) {
@@ -51,4 +49,9 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this,BarCodeGenerateActivity.class);
         startActivity(intent);
     }
+
+    private void showToast(String text){
+        Toast.makeText(this,text,Toast.LENGTH_LONG).show();
+    }
+
 }

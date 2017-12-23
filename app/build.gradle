@@ -21,7 +21,4 @@ android {
 dependencies {
     implementation "com.android.support:appcompat-v7:${supportLibraryVersion}"
     implementation project(':barcode-reader')
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.5.4'
-
-    testCompile 'junit:junit:4.12'
 }
