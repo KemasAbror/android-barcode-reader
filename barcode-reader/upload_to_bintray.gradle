@@ -11,7 +11,7 @@ ext {
     siteUrl = 'https://github.com/tyzlmjj/android-barcode-reader'
     gitUrl = 'https://github.com/tyzlmjj/android-barcode-reader.git'
 
-    libraryVersion = '0.1.0'
+    libraryVersion = rootProject.ext.versionName
 
     developerId = 'tyzlmjj'
     developerName = 'Ma JiaJie'

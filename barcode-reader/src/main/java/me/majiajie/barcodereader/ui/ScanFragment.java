@@ -43,6 +43,7 @@ public class ScanFragment extends Fragment implements ScanController {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
+        // 相机90度对应正常的垂直方向
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
         ORIENTATIONS.append(Surface.ROTATION_180, 270);
@@ -189,6 +190,7 @@ public class ScanFragment extends Fragment implements ScanController {
         mDecodeHandlerHelper.start();
         startPreview();
 
+        // 手机旋转角度监听
         mRotationEventHelper = new RotationEventHelper(mContext);
         mRotationEventHelper.setListener(mRotationEventListener);
         mRotationEventHelper.enable();
@@ -284,9 +286,6 @@ public class ScanFragment extends Fragment implements ScanController {
             }
 
             Camera.Parameters params = mCamera.getParameters();
-            // 防抖
-            params.setSceneMode(Camera.Parameters.SCENE_MODE_STEADYPHOTO);
-
             // 检查是否支持连续对焦,支持就设置
             List<String> focusModes = params.getSupportedFocusModes();
             if (focusModes != null && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {

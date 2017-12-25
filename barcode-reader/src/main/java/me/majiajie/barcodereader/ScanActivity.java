@@ -19,19 +19,17 @@ import me.majiajie.barcodereader.ui.ScanController;
 import me.majiajie.barcodereader.ui.ScanFragment;
 
 /**
- * <p>
  * 扫码
- * </p>
  */
 public class ScanActivity extends AppCompatActivity implements DecodeCallBackHandler.Callback, RequestPermissionFragment.RequestPermissionsCallback {
 
     public static final int REQUEST_CODE = 110;
 
-    private static final String ARG_DECODE_RESULT = "ARG_DECODE_RESULT";
+    public static final String ARG_DECODE_RESULT = "ARG_DECODE_RESULT";
 
-    private static final String ARG_THEME = "ARG_THEME";
+    public static final String ARG_THEME = "ARG_THEME";
 
-    private static final String ARG_SCAN_FORMAT = "ARG_SCAN_FORMAT";
+    public static final String ARG_SCAN_FORMAT = "ARG_SCAN_FORMAT";
 
     /**
      * 启动扫码Activity
