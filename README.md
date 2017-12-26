@@ -1,4 +1,4 @@
-# android-barcode-reader [ ![Download](https://api.bintray.com/packages/tyzlmjj/maven/barcode-reader/images/download.svg) ](https://bintray.com/tyzlmjj/maven/barcode-reader/_latestVersion)
+# android-barcode-reader [![GitHub release](https://img.shields.io/github/release/tyzlmjj/android-barcode-reader.svg)](https://github.com/tyzlmjj/android-barcode-reader/releases)
 
 这个库使用[zxing](https://github.com/zxing/zxing)实现了扫码的UI，方便使用。
 
