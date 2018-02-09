@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         // 只解析二维码
 //        ScanActivity.startActivityForResult(this,0, new int[]{BarcodeFormat.QR_CODE});
         // 第三个参数传空，默认解析二维码和CODE128
-        ScanActivity.startActivityForResult(this,0, null);
+        ScanActivity.startActivityForResult(this,R.style.FullSercen, null);
     }
 
     public void goQrCodeGenerateActivity(View view) {

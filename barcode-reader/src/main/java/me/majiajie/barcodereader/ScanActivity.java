@@ -12,7 +12,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import me.majiajie.barcodereader.decode.DecodeCallBackHandler;
 import me.majiajie.barcodereader.decode.DecodeResult;
 import me.majiajie.barcodereader.helper.RequestPermissionFragment;
 import me.majiajie.barcodereader.ui.ScanController;
@@ -21,7 +20,7 @@ import me.majiajie.barcodereader.ui.ScanFragment;
 /**
  * 扫码
  */
-public class ScanActivity extends AppCompatActivity implements DecodeCallBackHandler.Callback, RequestPermissionFragment.RequestPermissionsCallback {
+public class ScanActivity extends AppCompatActivity implements ScanFragment.ScanCallBack, RequestPermissionFragment.RequestPermissionsCallback {
 
     public static final int REQUEST_CODE = 110;
 
@@ -39,10 +38,22 @@ public class ScanActivity extends AppCompatActivity implements DecodeCallBackHan
      * @param scanFormat 扫码类型{@link BarcodeFormat BarcodeFormat}. 传null就默认扫描QRCODE和CODE128.
      */
     public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat) {
+        startActivityForResult(activity,theme,scanFormat,REQUEST_CODE);
+    }
+
+    /**
+     * 启动扫码Activity
+     *
+     * @param activity      {@link Activity}
+     * @param theme         主题,如果传0就使用应用默认主题
+     * @param scanFormat    扫码类型{@link BarcodeFormat BarcodeFormat}. 传null就默认扫描QRCODE和CODE128.
+     * @param requestCode   请求代码
+     */
+    public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat,int requestCode) {
         Intent intent = new Intent(activity, ScanActivity.class);
         intent.putExtra(ARG_THEME, theme);
         intent.putExtra(ARG_SCAN_FORMAT, scanFormat);
-        activity.startActivityForResult(intent, REQUEST_CODE);
+        activity.startActivityForResult(intent, requestCode);
     }
 
     /**
@@ -142,7 +153,7 @@ public class ScanActivity extends AppCompatActivity implements DecodeCallBackHan
     }
 
     @Override
-    public void onFailed() {
+    public void onDecodeFailed() {
         // 没有扫描到条码继续扫码
         if (mScanController != null) {
             mScanController.scanAgain();
@@ -150,7 +161,7 @@ public class ScanActivity extends AppCompatActivity implements DecodeCallBackHan
     }
 
     @Override
-    public void onSucceed(DecodeResult result) {
+    public void onDecodeSucceed(DecodeResult result) {
         Intent intent = new Intent();
         intent.putExtra(ARG_DECODE_RESULT, result);
         setResult(Activity.RESULT_OK, intent);

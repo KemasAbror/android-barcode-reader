@@ -68,9 +68,13 @@ public class BarCodeGenerateActivity extends AppCompatActivity {
             int width = 400 + 200 * mSeekbar.getProgress();
             int height = 200 + 200 * mSeekbarB.getProgress();
 
-            BarCodeGenerateHelper helper = new BarCodeGenerateHelper(str, BarcodeFormat.CODE_128,width,height,mColor);
+            BarCodeGenerateHelper helper =
+                    new BarCodeGenerateHelper.Builder(str, BarcodeFormat.CODE_128)
+                            .size(width,height)
+                            .color(mColor)
+                            .build();
             try {
-                Bitmap bitmap = helper.generate();
+                Bitmap bitmap = helper.generateBitmap();
                 mImg.setImageBitmap(bitmap);
             } catch (IOException e) {
                 e.printStackTrace();

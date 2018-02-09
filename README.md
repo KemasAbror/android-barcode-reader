@@ -12,9 +12,9 @@
 ## 添加gradle依赖
 
 ```
-compile 'me.majiajie:barcode-reader:0.1.1'
-compile 'com.google.zxing:core:3.3.0'
-compile 'com.android.support:appcompat-v7:+'
+implementation 'me.majiajie:barcode-reader:0.1.2'
+implementation 'com.google.zxing:core:3.3.0'
+implementation 'com.android.support:appcompat-v7:+'
 ```
 
 ## 使用

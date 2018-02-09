@@ -7,10 +7,9 @@ import com.google.zxing.common.BitMatrix;
 /**
  * 条码生成的工具类
  */
-class EncodeUtils {
+public class BarCodeEncodeUtils {
 
-    private EncodeUtils() {
-    }
+    private BarCodeEncodeUtils() {}
 
     /**
      * 将BitMatrix转换成Bitmap
@@ -20,7 +19,7 @@ class EncodeUtils {
      * @param color_background 条码背景色
      * @return 条码图片
      */
-    static Bitmap toBitmap(BitMatrix bitMatrix, int color, int color_background) {
+    public static Bitmap toBitmap(BitMatrix bitMatrix, int color, int color_background) {
         int width = bitMatrix.getWidth();
         int height = bitMatrix.getHeight();
 

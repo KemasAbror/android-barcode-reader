@@ -20,30 +20,36 @@ import java.util.Map;
  */
 public class QRCodeGenerateHelper {
 
-    private static final int SIZE_DEFAULT = 354;//默认大小
-
-    private static final int COLOR_DEFAULT = Color.BLACK;//默认颜色
-
-    private static final int BACKGROUND_COLOR_DEFAULT = Color.WHITE;//图片背景色
-
+    /**
+     * 二维码内容
+     */
     private String mContent;
+
+    /**
+     * 二维码大小
+     */
     private int mSize;
+
+    /**
+     * 二维码颜色
+     */
     private int mColor;
 
+    /**
+     * 背景颜色
+     */
+    private int mBackgroundColor;
+
+    /**
+     * Zxing 配置参数
+     */
     private Map<EncodeHintType,Object> mHints;
 
-    public QRCodeGenerateHelper(String content) {
-        this(content,SIZE_DEFAULT);
-    }
-
-    public QRCodeGenerateHelper(String content, int size) {
-        this(content,size,COLOR_DEFAULT);
-    }
-
-    public QRCodeGenerateHelper(String content, int size, int color) {
-        this.mContent = content;
-        this.mSize = size;
-        this.mColor = color;
+    private QRCodeGenerateHelper(Builder builder) {
+        mContent = builder.content;
+        mSize = builder.size;
+        mColor = builder.color;
+        mBackgroundColor = builder.backgroundColor;
 
         mHints = new HashMap<>();
         mHints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);//容差30%
@@ -55,16 +61,80 @@ public class QRCodeGenerateHelper {
     /**
      * 生成二维码
      */
-    public Bitmap generate() throws IOException {
+    public Bitmap generateBitmap() throws IOException {
+        BitMatrix bitMatrix = generateBitMatrix();
+        return bitMatrix == null ? null : BarCodeEncodeUtils.toBitmap(bitMatrix,mColor,mBackgroundColor);
+    }
+
+    /**
+     * 生成二维码
+     */
+    public BitMatrix generateBitMatrix() throws IOException {
         MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
-        BitMatrix bitMatrix = null;
+        BitMatrix bitMatrix;
         try {
             bitMatrix = multiFormatWriter.encode(mContent, BarcodeFormat.QR_CODE, mSize, mSize,mHints);
         } catch (WriterException e) {
             e.printStackTrace();
             throw new IOException(e);
         }
-        return bitMatrix == null ? null : EncodeUtils.toBitmap(bitMatrix,mColor,BACKGROUND_COLOR_DEFAULT);
+        return bitMatrix;
+    }
+
+    public static class Builder{
+
+        private static final int SIZE_DEFAULT = 354;//默认宽高
+
+        private String content;// 二维码内容
+        private int size;// 二维码宽高
+        private int color;// 二维码颜色
+        private int backgroundColor;// 背景颜色
+
+        /**
+         * 创建二维码生成的构造类
+         * @param content   条码内容
+         */
+        public Builder(String content) {
+            this.content = content;
+            this.color = Color.BLACK;
+            this.backgroundColor = Color.TRANSPARENT;
+            this.size = SIZE_DEFAULT;
+        }
+
+        /**
+         * 二维码宽高
+         * @param size     二维码宽高
+         */
+        public Builder size(int size){
+            this.size = size;
+            return Builder.this;
+        }
+
+        /**
+         * 二维码颜色
+         * @param color 16进制颜色值
+         */
+        public Builder color(int color){
+            this.color = color;
+            return Builder.this;
+        }
+
+        /**
+         * 二维码背景颜色
+         * @param backgroundColor 16进制颜色值
+         */
+        public Builder backgroundColor(int backgroundColor){
+            this.backgroundColor = backgroundColor;
+            return Builder.this;
+        }
+
+        /**
+         * 完成构建
+         */
+        public QRCodeGenerateHelper build(){
+            return new QRCodeGenerateHelper(this);
+        }
+
     }
 
 

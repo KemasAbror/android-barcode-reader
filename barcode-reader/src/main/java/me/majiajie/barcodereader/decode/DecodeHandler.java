@@ -33,15 +33,15 @@ public class DecodeHandler extends Handler {
     static final String BARCODE_RAW_RESULT = "barcode_raw_result";
     static final String BARCODE_FORMAT = "barcode_format";
 
-    private final DecodeCallBackHandler resultHandler;
+    private final Handler resultHandler;
     private final MultiFormatReader multiFormatReader;
     private boolean running = true;
 
-    DecodeHandler(Looper looper, DecodeCallBackHandler.Callback callBack, Map<DecodeHintType, Object> hints) {
+    DecodeHandler(Looper looper, Handler callBackHandler, Map<DecodeHintType, Object> hints) {
         super(looper);
         multiFormatReader = new MultiFormatReader();
         multiFormatReader.setHints(hints);
-        resultHandler = new DecodeCallBackHandler(Looper.getMainLooper(), callBack);
+        resultHandler = callBackHandler;
     }
 
     @Override
@@ -137,7 +137,7 @@ public class DecodeHandler extends Handler {
     /**
      * 创建缩略图并存放到Bundle
      */
-    private static void bundleThumbnail(PlanarYUVLuminanceSource source, Bundle bundle) {
+    private void bundleThumbnail(PlanarYUVLuminanceSource source, Bundle bundle) {
         int[] pixels = source.renderThumbnail();
         int width = source.getThumbnailWidth();
         int height = source.getThumbnailHeight();

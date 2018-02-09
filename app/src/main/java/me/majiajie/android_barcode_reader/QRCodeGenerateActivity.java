@@ -64,9 +64,11 @@ public class QRCodeGenerateActivity extends AppCompatActivity{
             Toast.makeText(this,"no content",Toast.LENGTH_SHORT).show();
         } else {
             int size = 177 * mSeekbar.getProgress();
-            QRCodeGenerateHelper helper = new QRCodeGenerateHelper(str,size,mColor);
+            QRCodeGenerateHelper helper = new QRCodeGenerateHelper.Builder(str)
+                    .size(size).color(mColor).build();
+
             try {
-                Bitmap bitmap = helper.generate();
+                Bitmap bitmap = helper.generateBitmap();
                 mImg.setImageBitmap(bitmap);
             } catch (IOException e) {
                 e.printStackTrace();

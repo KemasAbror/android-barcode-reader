@@ -29,8 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import me.majiajie.barcodereader.R;
-import me.majiajie.barcodereader.decode.DecodeCallBackHandler;
+import me.majiajie.barcodereader.decode.DecodeCallback;
 import me.majiajie.barcodereader.decode.DecodeHandlerHelper;
+import me.majiajie.barcodereader.decode.DecodeResult;
 import me.majiajie.barcodereader.helper.RotationEventHelper;
 import me.majiajie.barcodereader.ui.view.CameraPreview;
 import me.majiajie.barcodereader.ui.view.ScanView;
@@ -39,6 +40,16 @@ import me.majiajie.barcodereader.ui.view.ScanView;
  * 相机预览和图像解码
  */
 public class ScanFragment extends Fragment implements ScanController {
+
+    private static final String ARG_FORMATS = "ARG_FORMATS";
+
+    public static ScanFragment newInstance(int[] barcodeFormats) {
+        Bundle args = new Bundle();
+        args.putIntArray(ARG_FORMATS,barcodeFormats);
+        ScanFragment fragment = new ScanFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -52,11 +63,19 @@ public class ScanFragment extends Fragment implements ScanController {
 
     protected Context mContext;
 
-    // 相机预览视图的容器（父布局）,如果没有权限就不需要添加相机预览视图了
+    /**
+     * 相机预览视图的容器（父布局）,如果没有权限就不需要添加相机预览视图了
+     */
     protected FrameLayout mCameraPreview;
-    // 预览层之上的扫描框UI
+
+    /**
+     * 预览层之上的扫描框UI
+     */
     protected ScanView mScanView;
-    // 闪光灯开关
+
+    /**
+     * 闪光灯开关
+     */
     private CheckBox mCheckBoxLight;
 
     /**
@@ -80,27 +99,10 @@ public class ScanFragment extends Fragment implements ScanController {
     private boolean mFlashSupported;
 
     /**
-     * 解码回调
-     */
-    private DecodeCallBackHandler.Callback mDecodeCallBack;
-
-    /**
      * 持续性解码帮助类
      */
     protected DecodeHandlerHelper mDecodeHandlerHelper;
-
-    /**
-     * 闪光灯开关事件
-     */
-    private CompoundButton.OnCheckedChangeListener mFlashListener = new CompoundButton.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (!openFlash(isChecked)) {
-                buttonView.setChecked(!isChecked);
-                Toast.makeText(mContext, R.string.hint_no_flash, Toast.LENGTH_SHORT).show();
-            }
-        }
-    };
+    protected DecodeHandlerHelper mSecondDecodeHandlerHelper;
 
     /**
      * 相机预览视图启动事件
@@ -124,24 +126,41 @@ public class ScanFragment extends Fragment implements ScanController {
         }
     };
 
-    private static final String ARG_FORMATS = "ARG_FORMATS";
+    /**
+     * 扫码回调
+     */
+    private ScanCallBack mScanCallBack;
 
-    public static ScanFragment newInstance(int[] barcodeFormats) {
-        Bundle args = new Bundle();
-        args.putIntArray(ARG_FORMATS,barcodeFormats);
-        ScanFragment fragment = new ScanFragment();
-        fragment.setArguments(args);
-        return fragment;
+    /**
+     * 扫码回调
+     */
+    public interface ScanCallBack{
+
+        /**
+         * 扫码失败
+         */
+        void onDecodeFailed();
+
+        /**
+         * 扫码成功
+         * @param result    扫码信息
+         */
+        void onDecodeSucceed(DecodeResult result);
     }
+
+    /**
+     * 用于标记扫码成功
+     */
+    private boolean mIsSucceed = false;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
-        if (context instanceof DecodeCallBackHandler.Callback) {
-            mDecodeCallBack = (DecodeCallBackHandler.Callback) context;
+        if (context instanceof ScanCallBack) {
+            mScanCallBack = (ScanCallBack) context;
         } else {
-            throw new ClassCastException(context.toString() + " must implements DecodeCallBackHandler.Callback");
+            throw new ClassCastException(context.toString() + " must implements ScanCallBack");
         }
     }
 
@@ -188,6 +207,7 @@ public class ScanFragment extends Fragment implements ScanController {
     public void onResume() {
         super.onResume();
         mDecodeHandlerHelper.start();
+        mSecondDecodeHandlerHelper.start();
         startPreview();
 
         // 手机旋转角度监听
@@ -204,6 +224,7 @@ public class ScanFragment extends Fragment implements ScanController {
         mCheckBoxLight.setChecked(false);
         releaseCamera();
         mDecodeHandlerHelper.stopThread();
+        mSecondDecodeHandlerHelper.stopThread();
     }
 
     @Override
@@ -224,6 +245,7 @@ public class ScanFragment extends Fragment implements ScanController {
                     boolean isVertical = mContext.getResources().getConfiguration().orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
                     Rect rect = mScanView.getFramingRect(width, height, isVertical);
                     mDecodeHandlerHelper.decode(data, width, height, rect,isVertical);
+                    mSecondDecodeHandlerHelper.decode(data,width,height,new Rect(0,0,width,height),!isVertical);
                 }
             });
         }
@@ -234,19 +256,58 @@ public class ScanFragment extends Fragment implements ScanController {
      */
     private void initDecodeThread() {
         Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-
         // 设置解码类型
         hints.put(DecodeHintType.POSSIBLE_FORMATS, mBarcodeFormatList);
         hints.put(DecodeHintType.TRY_HARDER, false);
+        mDecodeHandlerHelper = new DecodeHandlerHelper(new DecodeCallback() {
+            @Override
+            public void onDecodeFailed() {
+                mScanCallBack.onDecodeFailed();
+            }
 
-        mDecodeHandlerHelper = new DecodeHandlerHelper(mDecodeCallBack, hints);
+            @Override
+            public void onDecodeSucceed(DecodeResult result) {
+                if (!mIsSucceed){
+                    mIsSucceed = true;
+                    mScanCallBack.onDecodeSucceed(result);
+                }
+            }
+        }, hints);
+
+        Map<DecodeHintType, Object> secondHints = new EnumMap<>(DecodeHintType.class);
+        // 设置解码类型
+        secondHints.put(DecodeHintType.POSSIBLE_FORMATS, mBarcodeFormatList);
+        secondHints.put(DecodeHintType.TRY_HARDER, true);
+        mSecondDecodeHandlerHelper = new DecodeHandlerHelper(new DecodeCallback() {
+            @Override
+            public void onDecodeFailed() {
+                // nothing
+            }
+
+            @Override
+            public void onDecodeSucceed(DecodeResult result) {
+                if (!mIsSucceed){
+                    mIsSucceed = true;
+                    mScanCallBack.onDecodeSucceed(result);
+                }
+            }
+        }, secondHints);
     }
 
     /**
      * 初始化事件
      */
     private void initEvent() {
-        mCheckBoxLight.setOnCheckedChangeListener(mFlashListener);
+        // 闪光灯开关
+        mCheckBoxLight.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (!openFlash(isChecked)) {
+                    buttonView.setChecked(!isChecked);
+                    Toast.makeText(mContext, R.string.hint_no_flash, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     /**

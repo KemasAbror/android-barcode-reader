@@ -28,7 +28,7 @@ public class DecodeResult implements Parcelable{
      */
     private int format;
 
-    public DecodeResult(String text, byte[] thumbnail, float scaledFactor, int format) {
+    DecodeResult(String text, byte[] thumbnail, float scaledFactor, int format) {
         this.text = text;
         this.thumbnail = thumbnail;
         this.scaledFactor = scaledFactor;
