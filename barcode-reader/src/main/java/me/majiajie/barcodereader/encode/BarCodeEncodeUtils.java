@@ -1,6 +1,13 @@
 package me.majiajie.barcodereader.encode;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.RectF;
+import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 
 import com.google.zxing.common.BitMatrix;
 
@@ -35,6 +42,46 @@ public class BarCodeEncodeUtils {
 
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
 
+        return bitmap;
+    }
+
+    /**
+     * 获取圆角图片
+     */
+    static Bitmap getRounndImg(Bitmap bitmap) {
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+
+        BitmapShader shader;
+        shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setShader(shader);
+
+        RectF rect = new RectF(0.0f, 0.0f, w, h);
+
+        Bitmap roundBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(roundBitmap);
+
+        canvas.drawRoundRect(rect, w*0.17f, h*0.17f, paint);
+
+        return roundBitmap;
+    }
+
+    /**
+     * drawable 转换为 Bitmap
+     */
+    static Bitmap drawableToBitmap(Drawable drawable){
+        int w = drawable.getIntrinsicWidth();
+        int h = drawable.getIntrinsicHeight();
+        Bitmap.Config config =
+                drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
+                        : Bitmap.Config.RGB_565;
+        Bitmap bitmap = Bitmap.createBitmap(w, h, config);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
         return bitmap;
     }
 }
