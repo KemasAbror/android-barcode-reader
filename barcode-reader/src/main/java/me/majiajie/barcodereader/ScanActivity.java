@@ -9,6 +9,7 @@ import android.support.annotation.StyleRes;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -30,6 +31,21 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
 
     public static final String ARG_SCAN_FORMAT = "ARG_SCAN_FORMAT";
 
+    public static final String ARG_FRAGMENT = "ARG_FRAGMENT";
+
+
+    /**
+     * 启动扫码Activity
+     *
+     * @param activity   {@link Activity}
+     * @param theme      主题,如果传0就使用应用默认主题
+     * @param scanFormat 扫码类型{@link BarcodeFormat BarcodeFormat}. 传null就默认扫描QRCODE和CODE128.
+     */
+    public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat, @Nullable Class<? extends BaseScanSucceedFragment> clz) {
+        startActivityForResult(activity,theme,scanFormat,clz,REQUEST_CODE);
+
+    }
+
     /**
      * 启动扫码Activity
      *
@@ -38,7 +54,7 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
      * @param scanFormat 扫码类型{@link BarcodeFormat BarcodeFormat}. 传null就默认扫描QRCODE和CODE128.
      */
     public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat) {
-        startActivityForResult(activity,theme,scanFormat,REQUEST_CODE);
+        startActivityForResult(activity,theme,scanFormat,null,REQUEST_CODE);
     }
 
     /**
@@ -49,10 +65,11 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
      * @param scanFormat    扫码类型{@link BarcodeFormat BarcodeFormat}. 传null就默认扫描QRCODE和CODE128.
      * @param requestCode   请求代码
      */
-    public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat,int requestCode) {
+    public static void startActivityForResult(Activity activity, @StyleRes int theme, @Nullable int[] scanFormat, @Nullable Class<? extends BaseScanSucceedFragment> clz,int requestCode) {
         Intent intent = new Intent(activity, ScanActivity.class);
         intent.putExtra(ARG_THEME, theme);
         intent.putExtra(ARG_SCAN_FORMAT, scanFormat);
+        intent.putExtra(ARG_FRAGMENT, clz == null ? "":clz.getName());
         activity.startActivityForResult(intent, requestCode);
     }
 
@@ -67,9 +84,14 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
     }
 
     /**
+     * 用于处理结果的Fragment tag
+     */
+    private static final String TAG_COMPLETE_FRAGMENT = "TAG_COMPLETE_FRAGMENT";
+
+    /**
      * 请求权限的Fragment的TAG
      */
-    private static final String REQUEST_PERMISSION_TAG = "REQUEST_PERMISSION_TAG";
+    private static final String TAG_REQUEST_PERMISSION = "TAG_REQUEST_PERMISSION";
 
     /**
      * 相机权限
@@ -91,6 +113,11 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
      */
     private int[] mBarFormat;
 
+    /**
+     * 用于处理结果的Fragment(不一定存在)
+     */
+    private BaseScanSucceedFragment mBaseScanSucceedFragment;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
 
@@ -101,6 +128,7 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
             setTheme(theme);
         }
         mBarFormat = intent.getIntArrayExtra(ARG_SCAN_FORMAT);
+        String fragmentName = intent.getStringExtra(ARG_FRAGMENT);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan);
@@ -112,11 +140,26 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
         }
 
         // 添加请求权限的Fragment
-        mRequestPermissionFragment = (RequestPermissionFragment) getSupportFragmentManager().findFragmentByTag(REQUEST_PERMISSION_TAG);
+        mRequestPermissionFragment = (RequestPermissionFragment) getSupportFragmentManager().findFragmentByTag(TAG_REQUEST_PERMISSION);
         if (mRequestPermissionFragment == null) {
             mRequestPermissionFragment = RequestPermissionFragment.newInstance(CAMERA_PERMISSION, getString(R.string.dialog_hint_camera_permission));
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.add(mRequestPermissionFragment, REQUEST_PERMISSION_TAG).commit();
+            transaction.add(mRequestPermissionFragment, TAG_REQUEST_PERMISSION).commit();
+        }
+
+        // 如果传入了Fragment类名字段就添加Fragment
+        if (!TextUtils.isEmpty(fragmentName)){
+            try {
+                mBaseScanSucceedFragment = (BaseScanSucceedFragment) getSupportFragmentManager().findFragmentByTag(TAG_COMPLETE_FRAGMENT);
+                if (mBaseScanSucceedFragment == null){
+                    mBaseScanSucceedFragment = (BaseScanSucceedFragment) Class.forName(fragmentName).newInstance();
+                    getSupportFragmentManager().beginTransaction()
+                            .add(mBaseScanSucceedFragment,TAG_COMPLETE_FRAGMENT)
+                            .commit();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -162,10 +205,14 @@ public class ScanActivity extends AppCompatActivity implements ScanFragment.Scan
 
     @Override
     public void onDecodeSucceed(DecodeResult result) {
-        Intent intent = new Intent();
-        intent.putExtra(ARG_DECODE_RESULT, result);
-        setResult(Activity.RESULT_OK, intent);
-        finish();
+        if (mBaseScanSucceedFragment != null){
+            mBaseScanSucceedFragment.onDecodeSucceed(result);
+        } else {
+            Intent intent = new Intent();
+            intent.putExtra(ARG_DECODE_RESULT, result);
+            setResult(Activity.RESULT_OK, intent);
+            finish();
+        }
     }
 
     @Override

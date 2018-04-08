@@ -268,6 +268,10 @@ public class ScanFragment extends Fragment implements ScanController {
             @Override
             public void onDecodeSucceed(DecodeResult result) {
                 if (!mIsSucceed){
+                    if (mCamera != null) {
+                        mCamera.setPreviewCallbackWithBuffer(null);
+                        mCamera.stopPreview();
+                    }
                     mIsSucceed = true;
                     mScanCallBack.onDecodeSucceed(result);
                 }
@@ -287,6 +291,10 @@ public class ScanFragment extends Fragment implements ScanController {
             @Override
             public void onDecodeSucceed(DecodeResult result) {
                 if (!mIsSucceed){
+                    if (mCamera != null) {
+                        mCamera.setPreviewCallbackWithBuffer(null);
+                        mCamera.stopPreview();
+                    }
                     mIsSucceed = true;
                     mScanCallBack.onDecodeSucceed(result);
                 }

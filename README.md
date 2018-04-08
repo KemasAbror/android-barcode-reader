@@ -12,7 +12,7 @@
 ## 添加gradle依赖
 
 ```
-implementation 'me.majiajie:barcode-reader:0.1.2'
+implementation 'me.majiajie:barcode-reader:0.1.4'
 implementation 'com.google.zxing:core:3.3.0'
 implementation 'com.android.support:appcompat-v7:+'
 ```
