@@ -1,8 +1,8 @@
-# android-barcode-reader [![GitHub release](https://img.shields.io/github/release/tyzlmjj/android-barcode-reader.svg)](https://github.com/tyzlmjj/android-barcode-reader/releases)
+# android-barcode-reader [![GitHub release](https://api.bintray.com/packages/tyzlmjj/maven/barcode-reader/images/download.svg)](https://github.com/tyzlmjj/android-barcode-reader/releases)
 
 这个库使用[zxing](https://github.com/zxing/zxing)实现了扫码的UI，方便使用。
 
-[Demo.apk](https://github.com/tyzlmjj/android-barcode-reader/releases/download/0.1.1/Demo.apk)
+[Demo.apk](https://github.com/tyzlmjj/android-barcode-reader/releases/download/0.1.5/Demo.apk)
 
 **目前实现的功能:**
 
@@ -12,7 +12,7 @@
 ## 添加gradle依赖
 
 ```
-implementation 'me.majiajie:barcode-reader:0.1.4'
+implementation 'me.majiajie:barcode-reader:0.1.5'
 implementation 'com.google.zxing:core:3.3.0'
 implementation 'com.android.support:appcompat-v7:+'
 ```

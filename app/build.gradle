@@ -21,6 +21,6 @@ android {
 dependencies {
     implementation "com.android.support:appcompat-v7:${supportLibraryVersion}"
     implementation project(':barcode-reader')
-//    implementation 'me.majiajie:barcode-reader:0.1.1'
+//    implementation "me.majiajie:barcode-reader:${versionName}"
 //    implementation 'com.google.zxing:core:3.3.0'
 }

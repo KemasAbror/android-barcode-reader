@@ -56,15 +56,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         try {
             // 判断屏幕显示方向是否垂直
             boolean isVertical = mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+
             // 设置预览视图的宽高
             Camera.Parameters parameters = mCamera.getParameters();
             Camera.Size size = getCloselyPreSize(isVertical, holder.getSurfaceFrame().width(), holder.getSurfaceFrame().height(), MAX_PREVIEW_WIDTH, MAX_PREVIEW_HEIGHT, parameters.getSupportedPreviewSizes());
-            holder.setFixedSize(size.width, size.height);
+            parameters.setPreviewSize(size.width,size.height);
+
+            mCamera.setParameters(parameters);
+            mCamera.setPreviewDisplay(holder);
 
             // 启动预览
-            mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
         } catch (IOException e) {
+            // 忽略异常
         }
     }
 
