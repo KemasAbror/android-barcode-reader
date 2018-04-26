@@ -10,22 +10,34 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="start ScanActivity For Result"
-        android:onClick="startScanActivity"
-        />
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="QR CODE GENERATE"
+        android:text="生成二维码"
         android:onClick="goQrCodeGenerateActivity"
         />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="BAR CODE GENERATE"
+        android:text="生成CODE128"
         android:onClick="goBarCodeGenerateActivity"
         />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="启动扫码"
+        android:onClick="startScanActivity"
+        />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="启动扫码并在Fragment中处理结果"
+        android:onClick="startScanActivityB"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="自定义"
+        android:onClick="startScanActivityC"/>
 
 </LinearLayout>

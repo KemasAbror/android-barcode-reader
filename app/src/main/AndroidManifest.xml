@@ -24,6 +24,12 @@
         <activity android:name=".BarCodeGenerateActivity"
             android:label="Bar Code Generate"/>
 
+        <activity android:name=".CustomScanActivity"
+            android:label=""
+            android:theme="@style/TranslucentStatus"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboard|keyboardHidden"/>
+
     </application>
 
 </manifest>

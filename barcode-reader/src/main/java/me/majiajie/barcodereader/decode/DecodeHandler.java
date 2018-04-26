@@ -2,6 +2,7 @@ package me.majiajie.barcodereader.decode;
 
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -12,7 +13,9 @@ import android.os.Message;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
 import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
 import com.google.zxing.PlanarYUVLuminanceSource;
+import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
@@ -56,6 +59,8 @@ public class DecodeHandler extends Handler {
             decode((DecodeBean) message.obj);
         } else if (what == R.id.decode_vertical) {
             decodeVertical((DecodeBean) message.obj);
+        } else if (what == R.id.decode_file) {
+            decodeFile((String) message.obj);
         } else if (what == R.id.quit) {
             running = false;
             Looper looper = Looper.myLooper();
@@ -135,6 +140,51 @@ public class DecodeHandler extends Handler {
     }
 
     /**
+     * 解码图片文件
+     */
+    private void decodeFile(String file) {
+        Result rawResult = null;
+        int[] data = new int[0];
+        int width = 0;
+        int height = 0;
+        try {
+            Bitmap bitmap = getFileBitmap(file, 1000, 1000);
+
+            width = bitmap.getWidth();
+            height = bitmap.getHeight();
+            data = new int[width * height];
+            bitmap.getPixels(data, 0, width, 0, 0, width, height);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        RGBLuminanceSource source = new RGBLuminanceSource(width, height, data);
+        BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+        try {
+            rawResult = multiFormatReader.decodeWithState(binaryBitmap);
+        } catch (NotFoundException e) {
+            //continue
+        }
+
+        if (resultHandler != null) {
+            if (rawResult != null) {
+                Message message = resultHandler.obtainMessage(R.id.decode_succeeded);
+                Bundle bundle = new Bundle();
+                bundle.putByteArray(BARCODE_BITMAP, rawResult.getRawBytes());
+                bundle.putFloat(BARCODE_SCALED_FACTOR, 1);
+                bundle.putString(BARCODE_RAW_RESULT, rawResult.getText());
+                bundle.putInt(BARCODE_FORMAT, BarcodeFormat.conversion(rawResult.getBarcodeFormat()));
+                message.setData(bundle);
+                message.sendToTarget();
+            } else {
+                Message message = resultHandler.obtainMessage(R.id.decode_failed);
+                message.sendToTarget();
+            }
+        }
+    }
+
+    /**
      * 创建缩略图并存放到Bundle
      */
     private void bundleThumbnail(PlanarYUVLuminanceSource source, Bundle bundle) {
@@ -174,5 +224,47 @@ public class DecodeHandler extends Handler {
 
         return new PlanarYUVLuminanceSource(data, width, height, newRect.left, newRect.top,
                 newRect.width(), newRect.height(), false);
+    }
+
+    /**
+     * 加载图片
+     */
+    private Bitmap getFileBitmap(String path, int reqWidth, int reqHeight) {
+        // 检查图片大小
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, options);
+
+        // 计算缩放大小
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        // 解析图片到内存
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        return BitmapFactory.decodeFile(path, options);
+    }
+
+    /**
+     * 计算缩放大小
+     */
+    private int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+
+        // 图片资源的大小
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            while ((halfHeight / inSampleSize) >= reqHeight
+                    && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
     }
 }

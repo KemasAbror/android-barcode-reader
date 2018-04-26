@@ -12,6 +12,7 @@
         <activity android:name=".ScanActivity"
             android:label="@string/title_scan_activity"
             android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboard|keyboardHidden"
             />
     </application>
 

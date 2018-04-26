@@ -5,12 +5,10 @@
 
     <item name="decode" type="id"/>
     <item name="decode_vertical" type="id"/>
+    <item name="decode_file" type="id"/>
     <item name="quit" type="id"/>
     <item name="decode_succeeded" type="id"/>
     <item name="decode_failed" type="id"/>
-
-    <!-- Strings -->
-    <string name="app_name">barcode-reader</string>
 
     <string name="title_scan_activity">scan code</string>
 

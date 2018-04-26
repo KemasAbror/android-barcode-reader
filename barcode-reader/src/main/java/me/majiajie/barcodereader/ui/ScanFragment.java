@@ -1,45 +1,46 @@
 package me.majiajie.barcodereader.ui;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.graphics.Rect;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.util.SparseIntArray;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.DecodeHintType;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 import me.majiajie.barcodereader.R;
 import me.majiajie.barcodereader.decode.DecodeCallback;
 import me.majiajie.barcodereader.decode.DecodeHandlerHelper;
 import me.majiajie.barcodereader.decode.DecodeResult;
-import me.majiajie.barcodereader.helper.RotationEventHelper;
-import me.majiajie.barcodereader.ui.view.CameraPreview;
+import me.majiajie.barcodereader.ui.camera.CameraSource;
+import me.majiajie.barcodereader.ui.camera.CameraSourcePreview;
 import me.majiajie.barcodereader.ui.view.ScanView;
 
 /**
  * 相机预览和图像解码
  */
-public class ScanFragment extends Fragment implements ScanController {
+public class ScanFragment extends Fragment implements ScanController{
 
     private static final String ARG_FORMATS = "ARG_FORMATS";
 
@@ -51,22 +52,15 @@ public class ScanFragment extends Fragment implements ScanController {
         return fragment;
     }
 
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final int REQUEST_CAMERA_PERMISSION = 10086;
 
-    static {
-        // 相机90度对应正常的垂直方向
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
-
-    protected Context mContext;
+    private Context mContext;
+    private Activity mActivity;
 
     /**
-     * 相机预览视图的容器（父布局）,如果没有权限就不需要添加相机预览视图了
+     * 相机预览视图
      */
-    protected FrameLayout mCameraPreview;
+    protected CameraSourcePreview mCameraPreview;
 
     /**
      * 预览层之上的扫描框UI
@@ -84,47 +78,14 @@ public class ScanFragment extends Fragment implements ScanController {
     private Collection<BarcodeFormat> mBarcodeFormatList;
 
     /**
-     * 屏幕旋转事件监听帮助
+     * 相机管理
      */
-    private RotationEventHelper mRotationEventHelper;
+    private CameraSource mCameraSource;
 
     /**
-     * 摄像头控制实例
+     * 记录是否暂停
      */
-    private Camera mCamera;
-
-    /**
-     * 判断是否支持闪光灯
-     */
-    private boolean mFlashSupported;
-
-    /**
-     * 持续性解码帮助类
-     */
-    protected DecodeHandlerHelper mDecodeHandlerHelper;
-    protected DecodeHandlerHelper mSecondDecodeHandlerHelper;
-
-    /**
-     * 相机预览视图启动事件
-     */
-    private CameraPreview.CameraPreviewListener mCameraPreviewListener = new CameraPreview.CameraPreviewListener() {
-        @Override
-        public void onStartPreview() {
-            scanAgain();
-        }
-    };
-
-    /**
-     * 屏幕方向旋转事件(不主动控制旋转事件，只在直接旋转180度时起作用)
-     */
-    private RotationEventHelper.RotationEventListener mRotationEventListener = new RotationEventHelper.RotationEventListener() {
-        @Override
-        public void onRotationChanged(int rotation) {
-            if (mCamera != null) {
-                mCamera.setDisplayOrientation(ORIENTATIONS.get(rotation));
-            }
-        }
-    };
+    private boolean mScanOver;
 
     /**
      * 扫码回调
@@ -148,15 +109,13 @@ public class ScanFragment extends Fragment implements ScanController {
         void onDecodeSucceed(DecodeResult result);
     }
 
-    /**
-     * 用于标记扫码成功
-     */
-    private boolean mIsSucceed = false;
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
+        if (context instanceof Activity){
+            mActivity = (Activity) context;
+        }
         if (context instanceof ScanCallBack) {
             mScanCallBack = (ScanCallBack) context;
         } else {
@@ -199,107 +158,107 @@ public class ScanFragment extends Fragment implements ScanController {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initDecodeThread();
+
         initEvent();
+
+        // 检查相机权限
+        int rc = ActivityCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA);
+        if (rc == PackageManager.PERMISSION_GRANTED) {
+            createCameraSource();
+        } else {
+            requestCameraPermission();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode != REQUEST_CAMERA_PERMISSION) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            return;
+        }
+
+        if (grantResults.length != 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // 相机权限获取成功
+            createCameraSource();
+            return;
+        }
+
+        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                mActivity.finish();
+            }
+        };
+
+        new AlertDialog.Builder(mContext)
+                .setTitle(R.string.notice)
+                .setMessage(R.string.dialog_hint_camera_permission)
+                .setPositiveButton(android.R.string.ok, listener)
+                .setCancelable(false)
+                .show();
+    }
+
+    /**
+     * 请求相机权限
+     */
+    private void requestCameraPermission() {
+        final String[] permissions = new String[]{Manifest.permission.CAMERA};
+
+        if (!shouldShowRequestPermissionRationale( Manifest.permission.CAMERA)) {
+            requestPermissions(permissions, REQUEST_CAMERA_PERMISSION);
+            return;
+        }
+
+        Dialog.OnClickListener listener = new Dialog.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                requestPermissions(permissions,REQUEST_CAMERA_PERMISSION);
+            }
+        };
+
+        new AlertDialog.Builder(mContext)
+                .setTitle(R.string.notice)
+                .setMessage(R.string.dialog_hint_camera_permission)
+                .setPositiveButton(android.R.string.ok, listener)
+                .setCancelable(false)
+                .show();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mDecodeHandlerHelper.start();
-        mSecondDecodeHandlerHelper.start();
-        startPreview();
-
-        // 手机旋转角度监听
-        mRotationEventHelper = new RotationEventHelper(mContext);
-        mRotationEventHelper.setListener(mRotationEventListener);
-        mRotationEventHelper.enable();
+        if (!mScanOver) {
+            startCameraSource();
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        mRotationEventHelper.disable();
-        mRotationEventHelper = null;
-        mCheckBoxLight.setChecked(false);
-        releaseCamera();
-        mDecodeHandlerHelper.stopThread();
-        mSecondDecodeHandlerHelper.stopThread();
+        if (mCameraPreview != null) {
+            mCameraPreview.stop();
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mContext = null;
-    }
-
-    @Override
-    public void scanAgain() {
-        if (mCamera != null) {
-            mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
-                @Override
-                public void onPreviewFrame(byte[] data, Camera camera) {
-                    Camera.Size size = camera.getParameters().getPreviewSize();
-                    int width = size.width;
-                    int height = size.height;
-                    boolean isVertical = mContext.getResources().getConfiguration().orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                    Rect rect = mScanView.getFramingRect(width, height, isVertical);
-                    mDecodeHandlerHelper.decode(data, width, height, rect,isVertical);
-                    mSecondDecodeHandlerHelper.decode(data,width,height,new Rect(0,0,width,height),!isVertical);
-                }
-            });
+        if (mCameraPreview != null) {
+            mCameraPreview.release();
         }
     }
 
-    /**
-     * 初始化解码线程
-     */
-    private void initDecodeThread() {
-        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-        // 设置解码类型
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, mBarcodeFormatList);
-        hints.put(DecodeHintType.TRY_HARDER, false);
-        mDecodeHandlerHelper = new DecodeHandlerHelper(new DecodeCallback() {
-            @Override
-            public void onDecodeFailed() {
-                mScanCallBack.onDecodeFailed();
-            }
+    @Override
+    public void startScan() {
+        mScanOver = false;
+        startCameraSource();
+    }
 
-            @Override
-            public void onDecodeSucceed(DecodeResult result) {
-                if (!mIsSucceed){
-                    if (mCamera != null) {
-                        mCamera.setPreviewCallbackWithBuffer(null);
-                        mCamera.stopPreview();
-                    }
-                    mIsSucceed = true;
-                    mScanCallBack.onDecodeSucceed(result);
-                }
-            }
-        }, hints);
-
-        Map<DecodeHintType, Object> secondHints = new EnumMap<>(DecodeHintType.class);
-        // 设置解码类型
-        secondHints.put(DecodeHintType.POSSIBLE_FORMATS, mBarcodeFormatList);
-        secondHints.put(DecodeHintType.TRY_HARDER, true);
-        mSecondDecodeHandlerHelper = new DecodeHandlerHelper(new DecodeCallback() {
-            @Override
-            public void onDecodeFailed() {
-                // nothing
-            }
-
-            @Override
-            public void onDecodeSucceed(DecodeResult result) {
-                if (!mIsSucceed){
-                    if (mCamera != null) {
-                        mCamera.setPreviewCallbackWithBuffer(null);
-                        mCamera.stopPreview();
-                    }
-                    mIsSucceed = true;
-                    mScanCallBack.onDecodeSucceed(result);
-                }
-            }
-        }, secondHints);
+    @Override
+    public void stopScan() {
+        mScanOver = true;
+        if (mCameraPreview != null) {
+            mCameraPreview.stop();
+        }
     }
 
     /**
@@ -323,71 +282,49 @@ public class ScanFragment extends Fragment implements ScanController {
      * @param open true 打开闪光灯
      */
     private boolean openFlash(boolean open) {
-        if (mFlashSupported && mCamera != null) {
-            Camera.Parameters params = mCamera.getParameters();
-            params.setFlashMode(open ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
-            mCamera.setParameters(params);
-            return true;
-        }
-        return false;
+        return mCameraSource != null && mCameraSource.setFlashMode(open ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
     }
 
     /**
-     * 开始显示相机预览
+     * 创建相机预览
      */
-    private void startPreview() {
-        if (mCamera == null) {
-            // 创建后置摄像头实例
-            mCamera = CameraUtils.getCameraInstance();
+    private void createCameraSource(){
+        mCameraPreview.release();
 
-            //后置摄像头不存在或异常
-            if (mCamera == null) {
-                Toast.makeText(mContext, R.string.hint_no_background_camera, Toast.LENGTH_SHORT).show();
-                return;
+        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
+        // 设置解码类型
+        hints.put(DecodeHintType.POSSIBLE_FORMATS, mBarcodeFormatList);
+        hints.put(DecodeHintType.TRY_HARDER, false);
+        DecodeHandlerHelper decodeHandlerHelper = new DecodeHandlerHelper(new DecodeCallback() {
+            @Override
+            public void onDecodeFailed() {
+                mScanCallBack.onDecodeFailed();
             }
-
-            // 根据屏幕方向做调整
-            WindowManager windowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-            if (windowManager != null) {
-                int displayRotation = windowManager.getDefaultDisplay().getRotation();
-                // 修改相机方向
-                mCamera.setDisplayOrientation(ORIENTATIONS.get(displayRotation));
+            @Override
+            public void onDecodeSucceed(DecodeResult result) {
+                mScanCallBack.onDecodeSucceed(result);
             }
+        }, hints);
 
-            Camera.Parameters params = mCamera.getParameters();
-            // 检查是否支持连续对焦,支持就设置
-            List<String> focusModes = params.getSupportedFocusModes();
-            if (focusModes != null && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-                mCamera.setParameters(params);
-                mCamera.cancelAutoFocus();
-            }
-
-            // 检查是否支持闪光灯
-            List<String> flashModes = params.getSupportedFlashModes();
-            if (flashModes != null && flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH) &&
-                    flashModes.contains(Camera.Parameters.FLASH_MODE_OFF)) {
-                mFlashSupported = true;
-            }
-
-            // 创建预览视图
-            CameraPreview preview = new CameraPreview(mContext, mCamera);
-            preview.setCameraPreviewListener(mCameraPreviewListener);
-            // 添加到布局
-            mCameraPreview.addView(preview);
-        }
+        mCameraSource = new CameraSource
+                .Builder(mContext.getApplicationContext(),decodeHandlerHelper)
+                .setRequestedFps(15.0f)
+                .build();
     }
 
     /**
-     * 释放相机
+     * 启动预览
      */
-    private void releaseCamera() {
-        if (mCamera != null) {
-            mCamera.setPreviewCallbackWithBuffer(null);
-            mCamera.stopPreview();
-            mCamera.release();
-            mCamera = null;
-            mCameraPreview.removeAllViews();
+    private void startCameraSource() throws SecurityException {
+        if (mCameraSource != null) {
+            try {
+                mCameraPreview.start(mCameraSource);
+            } catch (IOException e) {
+                e.printStackTrace();
+                mCameraSource.release();
+                mCameraSource = null;
+            }
         }
     }
+
 }

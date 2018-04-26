@@ -10,6 +10,7 @@ import android.os.Message;
 
 import com.google.zxing.DecodeHintType;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class DecodeHandlerHelper {
     /**
      * 用于判断是否停止
      */
-    private boolean isStoped;
+    private boolean isStart;
 
     /**
      * 判断是否正在解码
@@ -53,7 +54,7 @@ public class DecodeHandlerHelper {
      * 开启解码线程
      */
     public void start() {
-        isStoped = false;
+        isStart = true;
         mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();
 
@@ -62,13 +63,21 @@ public class DecodeHandlerHelper {
     }
 
     /**
+     * 判断是否启动
+     */
+    public boolean isStart(){
+        return isStart;
+    }
+
+    /**
      * 停止解码线程
      */
     public void stopThread() {
-        isStoped = true;
+        isStart = false;
 
         mDecodeHandler.removeMessages(R.id.decode);
         mDecodeHandler.removeMessages(R.id.decode_vertical);
+        mDecodeHandler.removeMessages(R.id.decode_file);
 
         if (mHandlerThread != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -96,10 +105,21 @@ public class DecodeHandlerHelper {
      * @param neadRotate    是否需要旋转图像，将图像顺时针旋转90度。（在解析一维码时方向很重要）
      */
     public void decode(byte[] data, int width, int height, Rect rect,boolean neadRotate) {
-        if (!isStoped && !isDecoding) {
+        if (isStart && !isDecoding) {
             isDecoding = true;
             DecodeBean bean = new DecodeBean(data, width, height, rect);
             mDecodeHandler.obtainMessage(neadRotate ? R.id.decode_vertical : R.id.decode, bean).sendToTarget();
+        }
+    }
+
+    /**
+     * 扫描图片
+     * @param file 图片文件
+     */
+    public void decode(File file) {
+        if (isStart && !isDecoding) {
+            isDecoding = true;
+            mDecodeHandler.obtainMessage(R.id.decode_file,file.getPath()).sendToTarget();
         }
     }
 
@@ -130,7 +150,6 @@ public class DecodeHandlerHelper {
             DecodeHandlerHelper decodeHandlerHelper = mHelper.get();
             if (decodeHandlerHelper != null){
                 decodeHandlerHelper.done();
-
                 int what = msg.what;
                 if (what == R.id.decode_succeeded) {//扫码成功
                     Bundle bundle = msg.getData();
@@ -142,6 +161,7 @@ public class DecodeHandlerHelper {
                 } else if (what == R.id.decode_failed) {//扫码失败
                     mCallBack.onDecodeFailed();
                 }
+
             }
         }
     }

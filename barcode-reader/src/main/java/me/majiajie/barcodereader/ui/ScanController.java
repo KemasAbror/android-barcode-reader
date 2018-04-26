@@ -6,7 +6,12 @@ package me.majiajie.barcodereader.ui;
 public interface ScanController {
 
     /**
-     * 再次扫码(调用一次扫一次)
+     * 停止扫码
      */
-    void scanAgain();
+    void stopScan();
+
+    /**
+     * 开始扫码
+     */
+    void startScan();
 }

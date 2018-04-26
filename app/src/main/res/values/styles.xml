@@ -12,4 +12,9 @@
         <item name="android:windowFullscreen">true</item>
     </style>
 
+    <!--布局延伸到系统栏下-->
+    <style name="TranslucentStatus"  parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
 </resources>
