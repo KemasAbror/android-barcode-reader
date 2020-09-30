@@ -3,23 +3,24 @@ package me.majiajie.android_barcode_reader;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.view.WindowInsetsCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.FragmentTransaction;
+
 import me.majiajie.barcodereader.decode.DecodeResult;
 import me.majiajie.barcodereader.ui.ScanController;
 import me.majiajie.barcodereader.ui.ScanFragment;
-import me.majiajie.photoalbum.PhotoAlbumActivity;
+import me.majiajie.photoalbum.AlbumActivity;
 
 /**
  * 自定义扫码并加入相册识别
@@ -55,7 +56,7 @@ public class CustomScanActivity extends AppCompatActivity implements ScanFragmen
 
         mScanController = fragment;
 
-        android.support.v4.view.OnApplyWindowInsetsListener insetsListener = new android.support.v4.view.OnApplyWindowInsetsListener() {
+        androidx.core.view.OnApplyWindowInsetsListener insetsListener = new androidx.core.view.OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
                 mToolbar.setPadding(0,insets.getSystemWindowInsetTop(),0,0);
@@ -78,13 +79,13 @@ public class CustomScanActivity extends AppCompatActivity implements ScanFragmen
                 onBackPressed();
                 break;
             case R.id.action_photos:// 调用相册
-                PhotoAlbumActivity.RequestData requestData = new PhotoAlbumActivity.RequestData();
+                AlbumActivity.RequestData requestData = new AlbumActivity.RequestData();
                 requestData.setFilterImageMimeType(new String[]{"image/gif"});
                 requestData.setTheme(R.style.PhotoAlbumDarkTheme);
                 requestData.setShowFullImageBtn(false);
                 requestData.setMaxPhotoNumber(1);
                 requestData.setFragmentClassName(CustomScanPhotoFragment.class.getName());
-                PhotoAlbumActivity.startActivityForResult(this,requestData,REQUEST_SCAN_PHOTO);
+                AlbumActivity.startActivityForResult(this,requestData,REQUEST_SCAN_PHOTO);
                 break;
         }
         return super.onOptionsItemSelected(item);

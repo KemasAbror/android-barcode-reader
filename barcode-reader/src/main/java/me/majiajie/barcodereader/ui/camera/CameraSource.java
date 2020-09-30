@@ -6,12 +6,14 @@ import android.content.res.Configuration;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.Camera;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StringDef;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.WindowManager;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringDef;
 
 import java.io.IOException;
 import java.lang.annotation.Retention;
@@ -124,7 +126,7 @@ public class CameraSource {
         public Builder(@NonNull Context context, @NonNull DecodeHandlerHelper decoder) {
             mDecoder = decoder;
             mCameraSource = new CameraSource(context);
-            mCameraSource.mMaxPreviewWidth = 2160;
+            mCameraSource.mMaxPreviewWidth = 2376;
             mCameraSource.mMaxPreviewHeight = 1080;
             mCameraSource.mRequestedFps = 30.0f;
             mCameraSource.mFocusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
@@ -133,7 +135,7 @@ public class CameraSource {
         }
 
         /**
-         * 设置相机预览帧的最大宽高限制,默认 2160x1080
+         * 设置相机预览帧的最大宽高限制
          */
         public Builder setMaxPreviewSize(int width, int height) {
             final int MAX = 1000000;
@@ -306,6 +308,8 @@ public class CameraSource {
         Camera.Size pictureSize = sizePair.pictureSize();
         mPreviewSize = sizePair.previewSize();
 
+        Log.i("asd","相机预览尺寸 mPreviewSize.width: " + mPreviewSize.width +" mPreviewSize.height: "+mPreviewSize.height);
+
         int[] previewFpsRange = selectPreviewFpsRange(camera, mRequestedFps);
         if (previewFpsRange == null) {
             throw new RuntimeException("Could not find suitable preview frames per second range.");
@@ -381,6 +385,7 @@ public class CameraSource {
 
         //先查找preview中是否存在与surfaceview相同宽高的尺寸
         for (SizePair sizePair : validPreviewSizes) {
+            Log.i("asd","支持的宽高 w: " + sizePair.previewSize().width + " h: " + sizePair.previewSize().height);
             if ((sizePair.previewSize().width == tmpWidth) &&
                     (sizePair.previewSize().height == tmpHeight)) {
                 return sizePair;

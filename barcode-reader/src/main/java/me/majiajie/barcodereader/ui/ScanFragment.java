@@ -8,17 +8,18 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.DecodeHintType;
@@ -40,13 +41,13 @@ import me.majiajie.barcodereader.ui.view.ScanView;
 /**
  * 相机预览和图像解码
  */
-public class ScanFragment extends Fragment implements ScanController{
+public class ScanFragment extends Fragment implements ScanController {
 
     private static final String ARG_FORMATS = "ARG_FORMATS";
 
     public static ScanFragment newInstance(int[] barcodeFormats) {
         Bundle args = new Bundle();
-        args.putIntArray(ARG_FORMATS,barcodeFormats);
+        args.putIntArray(ARG_FORMATS, barcodeFormats);
         ScanFragment fragment = new ScanFragment();
         fragment.setArguments(args);
         return fragment;
@@ -95,7 +96,7 @@ public class ScanFragment extends Fragment implements ScanController{
     /**
      * 扫码回调
      */
-    public interface ScanCallBack{
+    public interface ScanCallBack {
 
         /**
          * 扫码失败
@@ -104,16 +105,17 @@ public class ScanFragment extends Fragment implements ScanController{
 
         /**
          * 扫码成功
-         * @param result    扫码信息
+         *
+         * @param result 扫码信息
          */
         void onDecodeSucceed(DecodeResult result);
     }
 
     @Override
-    public void onAttach(Context context) {
+    public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         mContext = context;
-        if (context instanceof Activity){
+        if (context instanceof Activity) {
             mActivity = (Activity) context;
         }
         if (context instanceof ScanCallBack) {
@@ -127,7 +129,7 @@ public class ScanFragment extends Fragment implements ScanController{
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle bundle = getArguments();
-        if (bundle != null){
+        if (bundle != null) {
             int[] formats = bundle.getIntArray(ARG_FORMATS);
             mBarcodeFormatList = new ArrayList<>();
             if (formats != null && formats.length > 0) {
@@ -158,6 +160,13 @@ public class ScanFragment extends Fragment implements ScanController{
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        // 是否支持闪光灯判断
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
+            mCheckBoxLight.setVisibility(View.VISIBLE);
+        } else {
+            mCheckBoxLight.setVisibility(View.GONE);
+        }
 
         initEvent();
 
@@ -203,7 +212,7 @@ public class ScanFragment extends Fragment implements ScanController{
     private void requestCameraPermission() {
         final String[] permissions = new String[]{Manifest.permission.CAMERA};
 
-        if (!shouldShowRequestPermissionRationale( Manifest.permission.CAMERA)) {
+        if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
             requestPermissions(permissions, REQUEST_CAMERA_PERMISSION);
             return;
         }
@@ -211,7 +220,7 @@ public class ScanFragment extends Fragment implements ScanController{
         Dialog.OnClickListener listener = new Dialog.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                requestPermissions(permissions,REQUEST_CAMERA_PERMISSION);
+                requestPermissions(permissions, REQUEST_CAMERA_PERMISSION);
             }
         };
 
@@ -279,6 +288,7 @@ public class ScanFragment extends Fragment implements ScanController{
 
     /**
      * 闪光灯控制
+     *
      * @param open true 打开闪光灯
      */
     private boolean openFlash(boolean open) {
@@ -288,7 +298,7 @@ public class ScanFragment extends Fragment implements ScanController{
     /**
      * 创建相机预览
      */
-    private void createCameraSource(){
+    private void createCameraSource() {
         mCameraPreview.release();
 
         Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
@@ -300,6 +310,7 @@ public class ScanFragment extends Fragment implements ScanController{
             public void onDecodeFailed() {
                 mScanCallBack.onDecodeFailed();
             }
+
             @Override
             public void onDecodeSucceed(DecodeResult result) {
                 mScanCallBack.onDecodeSucceed(result);
@@ -307,7 +318,7 @@ public class ScanFragment extends Fragment implements ScanController{
         }, hints);
 
         mCameraSource = new CameraSource
-                .Builder(mContext.getApplicationContext(),decodeHandlerHelper)
+                .Builder(mContext.getApplicationContext(), decodeHandlerHelper)
                 .setRequestedFps(15.0f)
                 .build();
     }

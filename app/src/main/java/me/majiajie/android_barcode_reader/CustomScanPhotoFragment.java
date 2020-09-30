@@ -2,10 +2,13 @@ package me.majiajie.android_barcode_reader;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.widget.Toast;
 
@@ -19,14 +22,14 @@ import java.util.Map;
 import me.majiajie.barcodereader.decode.DecodeCallback;
 import me.majiajie.barcodereader.decode.DecodeHandlerHelper;
 import me.majiajie.barcodereader.decode.DecodeResult;
+import me.majiajie.photoalbum.AlbumActivity;
 import me.majiajie.photoalbum.BaseCompleteFragment;
-import me.majiajie.photoalbum.PhotoAlbumActivity;
-import me.majiajie.photoalbum.photo.Photo;
+import me.majiajie.photoalbum.data.AlbumFileBean;
 
 /**
  * 用于接收图片返回,并识别图片
  */
-public class CustomScanPhotoFragment extends BaseCompleteFragment{
+public class CustomScanPhotoFragment extends BaseCompleteFragment {
 
     private static final int REQUEST_CODE_CROP_IMAGE = 666;
 
@@ -47,24 +50,25 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
         @Override
         public void onDecodeFailed() {
             hideLoading();
-            if (mIsCrop || !goCropImage(mPhotoPath)){
+            if (mIsCrop || !goCropImage(mPhotoPath)) {
                 showToast("图片无法识别");
             }
         }
+
         @Override
         public void onDecodeSucceed(DecodeResult result) {
             hideLoading();
             Intent intent = new Intent();
-            intent.putExtra("result",result);
-            mActivity.setResult(Activity.RESULT_OK,intent);
+            intent.putExtra("result", result);
+            mActivity.setResult(Activity.RESULT_OK, intent);
             mActivity.finish();
         }
     };
 
     @Override
-    protected void onResultData(PhotoAlbumActivity.ResultData resultData) {
+    protected void onResultData(AlbumActivity.ResultData resultData) {
         mIsCrop = false;
-        ArrayList<Photo> photos = resultData.getPhotos();
+        ArrayList<AlbumFileBean> photos = resultData.getPhotos();
         mPhotoPath = photos.get(0).getPath();
         scanPhoto();
     }
@@ -74,6 +78,7 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
         super.onAttach(context);
         mContext = context;
         mActivity = (Activity) context;
+
         // 存储剪切图片的地址
         mCropTmpPath = context.getExternalCacheDir() + File.separator + "cropImg.jpg";
     }
@@ -89,8 +94,8 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == Activity.RESULT_OK){
-            switch (requestCode){
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
                 case REQUEST_CODE_CROP_IMAGE:// 裁剪图片返回
                     mIsCrop = true;
                     mPhotoPath = mCropTmpPath;
@@ -114,14 +119,23 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
      */
     private boolean goCropImage(String file) {
         Intent intent = new Intent();
+
+        Uri imageFile;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            imageFile = Uri.fromFile(new File(file));
+        } else {
+            imageFile = getImageContentUri(new File(file));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
         intent.setAction("com.android.camera.action.CROP");
-        intent.setDataAndType(Uri.fromFile(new File(file)), "image/*");
+        intent.setDataAndType(imageFile, "image/*");
         intent.putExtra("aspectX", 1);  //裁剪方框宽的比例
         intent.putExtra("aspectY", 1);
         intent.putExtra("scale", true);  //是否保持比例
         intent.putExtra("return-data", false);  //是否返回bitmap
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(mCropTmpPath))); //保存图片到指定uri
         intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());  //输出格式
+
         intent = Intent.createChooser(intent, "裁剪图片");
         if (intent.resolveActivity(mContext.getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_CODE_CROP_IMAGE);
@@ -132,15 +146,15 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
 
     private DecodeHandlerHelper mDecodePhotoHelper;
 
-    private DecodeHandlerHelper getScanCodeHelper(){
-        if (mDecodePhotoHelper == null){
+    private DecodeHandlerHelper getScanCodeHelper() {
+        if (mDecodePhotoHelper == null) {
             Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
             // 设置解码类型
             hints.put(DecodeHintType.POSSIBLE_FORMATS, null);
             hints.put(DecodeHintType.TRY_HARDER, false);
             mDecodePhotoHelper = new DecodeHandlerHelper(mPhotoDecodeCallback, hints);
         }
-        if (!mDecodePhotoHelper.isStart()){
+        if (!mDecodePhotoHelper.isStart()) {
             mDecodePhotoHelper.start();
         }
         return mDecodePhotoHelper;
@@ -177,14 +191,40 @@ public class CustomScanPhotoFragment extends BaseCompleteFragment{
     /**
      * 显示提示
      */
-    protected void showToast(String msg){
-        if (mToast == null){
-            mToast = Toast.makeText(mContext,msg,Toast.LENGTH_SHORT);
+    protected void showToast(String msg) {
+        if (mToast == null) {
+            mToast = Toast.makeText(mContext, msg, Toast.LENGTH_SHORT);
             mToast.show();
         } else {
             mToast.cancel();
-            mToast = Toast.makeText(mContext,msg,Toast.LENGTH_SHORT);
+            mToast = Toast.makeText(mContext, msg, Toast.LENGTH_SHORT);
             mToast.show();
         }
     }
+
+    public Uri getImageContentUri(File imageFile) {
+        String filePath = imageFile.getAbsolutePath();
+        Cursor cursor = mContext.getContentResolver().query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                new String[]{MediaStore.Images.Media._ID},
+                MediaStore.Images.Media.DATA + "=? ",
+                new String[]{filePath}, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int id = cursor.getInt(cursor
+                    .getColumnIndex(MediaStore.MediaColumns._ID));
+            Uri baseUri = Uri.parse("content://media/external/images/media");
+            return Uri.withAppendedPath(baseUri, "" + id);
+        } else {
+            if (imageFile.exists()) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DATA, filePath);
+                return mContext.getContentResolver().insert(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            } else {
+                return null;
+            }
+        }
+    }
+
 }
